@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "type": "java",
+        "name": "Main",
+        "request": "launch",
+        "mainClass": "ec.edu.espol.Main",
+        "projectName": "proyectoedd"
+    },
+    {
+        "name": "Debug JavaFX (attach to Maven)",
+        "type": "java",
+        "request": "attach",
+        "hostName": "localhost",
+        "port": 5005,
+        "preLaunchTask": "Run JavaFX (Debug, Maven Wrapper)"
+    }
+]
+}

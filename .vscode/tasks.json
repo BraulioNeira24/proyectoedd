@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run JavaFX (Maven Wrapper)",
+      "type": "shell",
+      "command": "./mvnw",
+      "args": ["clean", "javafx:run"],
+      "windows": { "command": ".\\mvnw.cmd" },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run JavaFX (Debug, Maven Wrapper)",
+      "type": "shell",
+      "command": "./mvnw",
+      "args": ["-Pdebug", "clean", "javafx:run"],
+      "windows": { "command": ".\\mvnw.cmd" },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
