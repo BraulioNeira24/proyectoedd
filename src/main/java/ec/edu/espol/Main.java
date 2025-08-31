@@ -12,6 +12,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import java.io.*;
@@ -22,10 +24,16 @@ public class Main extends Application {
     private Random randomColor = new Random();
     private Map<Aeropuerto, Color> coloresAeropuertos = new HashMap<>();
 
+
+
+
+
     @Override
     public void start(Stage stage) {
         //Crear el Pane principal
         Pane root = new Pane(); //Crea un contenedor para los elementos gráficos.
+
+        
 
         // Cargar la imagen del mapa 
         Image mapa = new Image(getClass().getResourceAsStream("/mapa.png"));
@@ -35,6 +43,12 @@ public class Main extends Application {
         // Crear el Canvas (por ejemplo, de 900x600 pixeles)
         Canvas canvas = new Canvas(canvasWidth, canvasHeight); //Crea el área de dibujo donde se mostrará el mapa y los elementos.
         root.getChildren().add(canvas); //Añade el canvas al contenedor.
+        // Boton agregar aeropuerto 
+        Button btnAgregarAeropuerto = new Button("Agregar Aeropuerto");
+        btnAgregarAeropuerto.setLayoutX(20); //Posiciona horizontal en la ventana
+        btnAgregarAeropuerto.setLayoutY(20); //Posicionavertical en la ventana
+        root.getChildren().add(btnAgregarAeropuerto); // Añadir el botón a la ventana
+
         
         //Dibujar la imagen en el canvas (sin escalado)
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -117,21 +131,94 @@ public class Main extends Application {
         /*
          * ZOOM
         */
+        double[] zoom = {1.0};
+        Runnable draw = () -> {
+            gc.save();
+            gc.clearRect(0,0,canvasWidth,canvasHeight);
 
+            gc.scale(zoom[0],zoom[0]);
+            gc.drawImage(mapa,0,0,canvasWidth,canvasHeight);
 
-
-
-
-
-
-
-        
+            gc.restore();
+        };
+        canvas.setOnScroll(event -> {
+            double factor = 1.1;
+            if(event.getDeltaY() < 0) factor = 1 / factor;
+            zoom[0] *= factor;
+            draw.run();
+        });
 
         /*
          * BOTONES
+         *    ^_____^
+         *  Agregar Aeropuerto ** Eliminar Aeropuerto ** Crear Vuelo 
+         * ** Buscar Ruta ** Estadisticas ** Reiniciar ** Ver Vuelos de Aeropuerto
+         * 
+         * 
         */
-        
+        // Agregar Aeropuerto
+        btnAgregarAeropuerto.setOnAction(e -> {
+            TextInputDialog dialog = new TextInputDialog(); //crea la ventanita para pedir texto
+            dialog.setTitle("Agregar Aeropuerto"); 
+            dialog.setHeaderText("Ingrese el código del aeropuerto:");
+            Optional<String> result = dialog.showAndWait(); //muestra la ventana y espera la respuesta
+            if(result.isPresent()){ //verifica si el usuario escribió algo o canceló
+                String codigo = result.get().trim().toUpperCase(); // limpia espacios y pone el código en mayúsculas
+                if(red.findAeropuerto(codigo) != null){
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Ya existe un aeropuerto con ese código.", ButtonType.OK);
+                    alert.showAndWait(); // Muestra un mensaje de error si el aeropuerto ya existe
+                    return; // Salimos del handler, no seguimos con el proceso
+                }
+                Alert info = new Alert(Alert.AlertType.INFORMATION, "Haz clic en el mapa para seleccionar la ubicacion del aeropuerto:", ButtonType.OK);
+                info.showAndWait(); // Muestra un mensaje de información
 
+                // Espera a que el usuario haga clic en el canvas
+                canvas.setOnMouseClicked((MouseEvent ev) -> {
+                    // Obtenemos las coordenadas del clic
+                    double x = ev.getX(); 
+                    double y = ev.getY();
+                    // Convertimos x, y a la longitud y latitud usando las funciones auxiliares
+                    double lon = (x / canvasWidth) * 360.0 - 180.0;
+                    double lat = 90.0 - (y / canvasHeight) * 180.0;
+
+                    TextInputDialog dNombre = new TextInputDialog();
+                    dNombre.setTitle("Nombre");
+                    dNombre.setHeaderText("Ingrese el nombre del aeropuerto:");
+                    Optional<String> rNombre = dNombre.showAndWait();
+                    if(!rNombre.isPresent()) return;
+
+                    TextInputDialog dCiudad = new TextInputDialog();
+                    dCiudad.setTitle("Ciudad");
+                    dCiudad.setHeaderText("Ingrese la ciudad del aeropuerto:");
+                    Optional<String> rCiudad = dCiudad.showAndWait();
+                    if(!rCiudad.isPresent()) return;
+
+                    TextInputDialog dPais = new TextInputDialog();
+                    dPais.setTitle("País");
+                    dPais.setHeaderText("Ingrese el país del aeropuerto:");
+                    Optional<String> rPais = dPais.showAndWait();
+                    if(!rPais.isPresent()) return;
+
+                    // Si todos los datos son válidos, se crea el aeropuerto
+                    String nombre = rNombre.get().trim();
+                    String ciudad = rCiudad.get().trim();
+                    String pais = rPais.get().trim();
+                    Aeropuerto nuevoAeropuerto = new Aeropuerto(codigo, nombre, ciudad, pais, lat, lon);
+                    red.addAeropuerto(nuevoAeropuerto);
+
+                    // Dibuja el aeropuerto en el mapa
+                    Color colorAl = generarColorAleatorio();
+                    coloresAeropuertos.put(nuevoAeropuerto, colorAl);
+                    gc.setFill(colorAl);
+                    gc.fillOval(x - 5, y - 5, 10, 10);
+                    gc.setFill(Color.BLACK);
+                    gc.fillText(nuevoAeropuerto.getNombre(), x + 8, y);
+
+                    // Restablece el evento de clic del mouse
+                    canvas.setOnMouseClicked(null);
+                });
+            }
+        });        
 
 
 
