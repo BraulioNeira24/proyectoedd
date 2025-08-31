@@ -113,7 +113,7 @@ public class Red {
 
     
     // Encontrar ruta mas corta 
-        public List<Vuelos> dijkstraVuelos(String codigoOrigen, String codigoDestino) {
+    public List<Vuelos> dijkstraVuelos(String codigoOrigen, String codigoDestino) {
         Map<Aeropuerto, Vuelos> predecesor = new HashMap<>();
         Map<Aeropuerto, Double> distancia = new HashMap<>();
         Set<Aeropuerto> visitados = new HashSet<>();
