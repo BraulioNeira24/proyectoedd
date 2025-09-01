@@ -33,8 +33,8 @@ public class Main extends Application {
 
         // Cargar la imagen del mapa 
         Image mapa = new Image(getClass().getResourceAsStream("/mapa.png"));
-        double canvasWidth = 1280; // Obtener tamano de la imagen anchura
-        double canvasHeight = 820; // Obtener tamano de la imagen altura
+        double canvasWidth = 1920; // Obtener tamano de la imagen anchura
+        double canvasHeight = 1060; // Obtener tamano de la imagen altura
         
         // Crear el Canvas (por ejemplo, de 900x600 pixeles)
         Canvas canvas = new Canvas(canvasWidth, canvasHeight); //Crea el área de dibujo donde se mostrará el mapa y los elementos.
@@ -155,7 +155,7 @@ public class Main extends Application {
             if(!rDestino.isPresent()) return;
             String codOrigen = rOrigen.get().trim().toUpperCase(); // Los Codgios cambiarlos a mayusculas porsiacaso
             String codDestino = rDestino.get().trim().toUpperCase();// Los Codigos cambiarlos los espacios y las mayusculas (destino)L
-            List<List<Vuelos>> rutas = red.buscarRutasAlternativas(codOrigen, codDestino);
+            List<List<Vuelos>> rutas = red.buscarRutasAlternativasBFS(codOrigen, codDestino);
             if(rutas.isEmpty()){
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "No Existe Ruta que cruze entre estos Aeropuertos", ButtonType.OK);
                 alert.showAndWait();

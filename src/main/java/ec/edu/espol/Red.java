@@ -215,19 +215,14 @@ public class Red implements Serializable{
     }
 
     // Busqueda de rutas alternativas 
-    public List<List<Vuelos>> buscarRutasAlternativas(String origen, String destino){
-        List<List<Vuelos>> rutas = new ArrayList<>();
-        Aeropuerto aeropuertoOrigen = findAeropuerto(origen);
-        Aeropuerto aeropuertoDestino = findAeropuerto(destino);
-        // Comprobar si los aeropuertos existen 
-        if(aeropuertoOrigen == null || aeropuertoDestino == null) {
-            return rutas;
-        }
-        List<Vuelos> rutaActual = new ArrayList<>();
-        List<Aeropuerto> visitados = new ArrayList<>();
-        buscarRutasDFS(aeropuertoOrigen, aeropuertoDestino, rutaActual, rutas, visitados);
-        return rutas;
-    }
+    public List<List<Vuelos>> buscarRutasAlternativasBFS(String origen, String destino) {
+    List<List<Vuelos>> rutas = new ArrayList<>();
+    Aeropuerto aeropuertoOrigen = findAeropuerto(origen);
+    Aeropuerto aeropuertoDestino = findAeropuerto(destino);
+    if (aeropuertoOrigen == null || aeropuertoDestino == null) return rutas;
+    buscarRutasBFS(aeropuertoOrigen, aeropuertoDestino, rutas);
+    return rutas;
+}
     // Metodo Auxiliar
     private void buscarRutasDFS(Aeropuerto actual, Aeropuerto destino, List<Vuelos> rutaActual, List<List<Vuelos>> rutas, List<Aeropuerto> visitados){
         // Si el actual es igual al destino
@@ -246,6 +241,42 @@ public class Red implements Serializable{
         }
         visitados.remove(visitados.size() - 1);
     }
+
+    private void buscarRutasBFS(Aeropuerto origen, Aeropuerto destino, List<List<Vuelos>> rutas) {
+    Queue<List<Vuelos>> cola = new LinkedList<>();
+
+    // Inicializa la cola con los vuelos que salen del aeropuerto de origen
+    for (Vuelos vuelo : origen.getAdyacentes()) {
+        List<Vuelos> rutaInicial = new ArrayList<>();
+        rutaInicial.add(vuelo);
+        cola.add(rutaInicial);
+    }
+
+    while (!cola.isEmpty()) {
+        List<Vuelos> rutaActual = cola.poll();
+        Vuelos ultimoVuelo = rutaActual.get(rutaActual.size() - 1);
+        Aeropuerto actual = ultimoVuelo.getTarget();
+
+        if (actual.equals(destino)) {
+            rutas.add(new ArrayList<>(rutaActual));
+        } else {
+            // Para evitar ciclos, obtenemos los aeropuertos ya visitados en esta ruta
+            Set<Aeropuerto> visitados = new HashSet<>();
+            visitados.add(origen);
+            for (Vuelos v : rutaActual) {
+                visitados.add(v.getSource());
+                visitados.add(v.getTarget());
+            }
+            for (Vuelos siguienteVuelo : actual.getAdyacentes()) {
+                if (!visitados.contains(siguienteVuelo.getTarget())) {
+                    List<Vuelos> nuevaRuta = new ArrayList<>(rutaActual);
+                    nuevaRuta.add(siguienteVuelo);
+                    cola.add(nuevaRuta);
+                }
+            }
+        }
+    }
+}
     
     //Buscar vuelos por Aerolinea 
     public List<Vuelos> buscarVuelosPorAerolinea(String aerolinea){
