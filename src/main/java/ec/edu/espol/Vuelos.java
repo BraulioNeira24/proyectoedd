@@ -1,7 +1,9 @@
 package ec.edu.espol;
 
+import java.io.Serializable;
+
 //Aristas
-public class Vuelos {
+public class Vuelos implements Serializable{
     private Aeropuerto source; // vertice origen
     private Aeropuerto target; // vertice destino
     private int minuto; // minuto de vuelo

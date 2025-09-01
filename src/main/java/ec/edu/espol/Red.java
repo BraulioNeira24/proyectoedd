@@ -1,5 +1,6 @@
 package ec.edu.espol;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -15,7 +16,7 @@ import java.util.Set;
  * 
  */
 //Aristas dirigidas?
-public class Red {
+public class Red implements Serializable{
     private LinkedList<Aeropuerto> vertices = new LinkedList<>();
     private Comparator cmp;
 

@@ -1,8 +1,9 @@
 package ec.edu.espol;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 
-public class Aeropuerto {
+public class Aeropuerto implements Serializable{
     //Atributos 
     private String codigo; // codigo del aeropuerto
     private String nombre; // nombre del aeropuerto
