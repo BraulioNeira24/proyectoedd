@@ -18,7 +18,7 @@ import java.util.Set;
 //Aristas dirigidas?
 public class Red implements Serializable{
     private LinkedList<Aeropuerto> vertices = new LinkedList<>();
-    private Comparator cmp;
+    private transient Comparator cmp;
 
 
     public Red(Comparator cmp) {
@@ -338,5 +338,7 @@ public class Red implements Serializable{
     alcanzables.remove(origen); 
     return alcanzables;
 }
-
+    public void setComparator(Comparator cmp) {
+    this.cmp = cmp;
+}
 }

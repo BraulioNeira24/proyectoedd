@@ -21,9 +21,10 @@ import java.io.*;
 import java.util.*;
 
 public class Main extends Application {
-    private final String ARCHIVO_DATOS = "datosAeropuertos.dat";
+    private final String ARCHIVO_DATOS = System.getProperty("user.home") + File.separator + "datosAeropuertos.dat";
     private Random randomColor = new Random();
     private Map<Aeropuerto, Color> coloresAeropuertos = new HashMap<>();
+    private Red red;
 
     @Override
     public void start(Stage stage) {
@@ -111,8 +112,14 @@ public class Main extends Application {
          */
         //Comparator para comprar codigos de aeropuerto 
         Comparator<String> cmp = (a,b) -> a.compareToIgnoreCase(b);
-        Red red = new Red(cmp);
-        cargarDatosIniciales(red);
+        red = cargarDatos();
+        if(red==null){
+            red = new Red(cmp);
+            cargarDatosIniciales(red);
+            guardarDatos(red);
+        }
+
+        
         coloresAeropuertos.clear();
         redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
         /*
@@ -273,6 +280,9 @@ public class Main extends Application {
                     Aeropuerto nuevoAeropuerto = new Aeropuerto(codigo, nombre, ciudad, pais, lat, lon);
                     red.addAeropuerto(nuevoAeropuerto);
 
+                    // Guardar datos tras agregar aeropuerto
+                    guardarDatos(red);
+
                     // Dibuja el aeropuerto en el mapa
                     Color colorAl = generarColorAleatorio();
                     coloresAeropuertos.put(nuevoAeropuerto, colorAl);
@@ -373,6 +383,7 @@ public class Main extends Application {
                     String aerolinea = resultAerolinea.get().trim();
                     boolean agregado = red.addVuelo(origenSeleccionado[0].getCodigo(), destinoSeleccionado[0].getCodigo(), minutos, precio, aerolinea);
                     if(agregado){
+                        guardarDatos(red);
                         redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
                         Alert exito = new Alert(Alert.AlertType.INFORMATION, "Vuelo creado exitosamente.", ButtonType.OK);
                         exito.showAndWait();
@@ -426,6 +437,7 @@ public class Main extends Application {
                     // Buscar y eliminar el vuelo
                     boolean eliminado = red.deleteVuelo(origenSeleccionado[0].getCodigo(), destinoSeleccionado[0].getCodigo());
                     if (eliminado) {
+                        guardarDatos(red);
                         redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
                         Alert exito = new Alert(Alert.AlertType.INFORMATION, "Vuelo eliminado exitosamente.", ButtonType.OK);
                         exito.showAndWait();
@@ -442,7 +454,12 @@ public class Main extends Application {
         btnReiniciar.setOnAction(e ->{
             coloresAeropuertos.clear();
             cargarDatosIniciales(red);
+            guardarDatos(red);
             redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
+        });
+
+        stage.setOnCloseRequest(event -> {
+            guardarDatos(red);
         });
 
         // Eliminar Aeropuerto
@@ -460,6 +477,7 @@ public class Main extends Application {
                     return;
                 }
                 red.eliminarAeropuerto(codigo);
+                guardarDatos(red);
                 coloresAeropuertos.remove(aeropuertoEliminar);
                 redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
             }
@@ -650,8 +668,34 @@ public class Main extends Application {
         alert.showAndWait();
     }
         
+    
+    private void guardarDatos(Red red) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_DATOS))) {
+            oos.writeObject(red);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private Red cargarDatos() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO_DATOS))) {
+            Red redCargada = (Red) ois.readObject();
+            // Vuelve a asignar el Comparator
+            redCargada.setComparator((a, b) -> a.toString().compareToIgnoreCase(b.toString()));
+            return redCargada;
+            
+        } catch (Exception e) {
+            return null; // Si no existe el archivo o hay error, retorna null
+        }
+    }
+    
+
+
 
     
+
+
+
     public static void main(String[] args) {
         launch(args);
     }
