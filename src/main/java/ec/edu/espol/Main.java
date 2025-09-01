@@ -80,12 +80,21 @@ public class Main extends Application {
         btnBuscarRuta.setLayoutX(20); 
         btnBuscarRuta.setLayoutY(220);
         root.getChildren().add(btnBuscarRuta);
-        // boton regresar y see aparece dsps de buscar ruta
+        /*
+        * Botón Regresar (para volver al mapa completo después de buscar rutas)
+        */
         Button btnRegresar = new Button("Regresar");
         btnRegresar.setLayoutX(20);
         btnRegresar.setLayoutY(260);
         btnRegresar.setVisible(false); 
         root.getChildren().add(btnRegresar);
+        /*
+        * Boton Eliminar Vuelo
+        */
+        Button btnEliminarVuelo = new Button("Eliminar Vuelo");
+        btnEliminarVuelo.setLayoutX(20);
+        btnEliminarVuelo.setLayoutY(300); // Ajusta la posición si es necesario
+        root.getChildren().add(btnEliminarVuelo);
 
         //Dibujar la imagen en el canvas (sin escalado)
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -106,15 +115,17 @@ public class Main extends Application {
         cargarDatosIniciales(red);
         coloresAeropuertos.clear();
         redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
-        
-
+        /*
+         * Boton Estadistica
+        */
+        Button btnEstadistica = new Button("Estadísticas");
+        btnEstadistica.setLayoutX(20);
+        btnEstadistica.setLayoutY(340);
+        root.getChildren().add(btnEstadistica);
+        btnEstadistica.setOnAction(e -> mostrarEstadisticasAeropuertos(red));
         /*
          * BOTONES
          *    ^_^
-         *  *Eliminar Vuelo*
-         * * Estadisticas
-         * 
-         * 
         */
 
     // Buscar Ruta
@@ -185,6 +196,10 @@ public class Main extends Application {
             }
             btnRegresar.setVisible(true);
         });
+        btnRegresar.setOnAction(e -> {
+            redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
+            btnRegresar.setVisible(false);
+        });
 
 
 
@@ -210,10 +225,17 @@ public class Main extends Application {
                     double x = ev.getX(); 
                     double y = ev.getY();
 
+                    //Convertir a coordenadas reales de la imagen
+                    double escalaX = mapa.getWidth()/ canvas.getWidth();
+                    double escalaY = mapa.getHeight()/ canvas.getHeight();
+
+                    int imgX = (int)(x*escalaX);
+                    int imgY = (int)(y*escalaY);
+
                     //Evitamos que exista un aeropuerto en el agua
                     PixelReader pixelReader = mapa.getPixelReader();
-                    Color colorPixel = pixelReader.getColor((int)x, (int)y);
-                    if(colorPixel.getBlue() > 0.5 && colorPixel.getGreen() < 0.5 && colorPixel.getRed() < 0.5){
+                    Color colorPixel = pixelReader.getColor(imgX, imgY);
+                    if(colorPixel.getBlue() < 0.7 && colorPixel.getGreen() < 0.5 && colorPixel.getRed() < 0.4){
                     Alert alert = new Alert(Alert.AlertType.ERROR, "No se puede colocar un aeropuerto en el agua.", ButtonType.OK);
                     alert.showAndWait();
                     return;
@@ -361,6 +383,59 @@ public class Main extends Application {
                     canvas.setOnMouseClicked(null);
                 }
             });
+        });
+
+        btnEliminarVuelo.setOnAction(e -> {
+            Alert info = new Alert(Alert.AlertType.INFORMATION, "Haga clic en el aeropuerto de ORIGEN", ButtonType.OK);
+            info.showAndWait();
+            final Aeropuerto[] origenSeleccionado = new Aeropuerto[1];
+            final Aeropuerto[] destinoSeleccionado = new Aeropuerto[1];
+
+            canvas.setOnMouseClicked((MouseEvent ev) -> {
+                double x = ev.getX();
+                double y = ev.getY();
+                Aeropuerto aeropuertoClic = null;
+                double minDist = 10.0;
+                for (Aeropuerto a : red.getVertices()) {
+                    double ax = lonToX(a.getLongitud(), canvasWidth);
+                    double ay = latToY(a.getLatitud(), canvasHeight);
+                    double dist = Math.hypot(x - ax, y - ay);
+                    if (dist <= minDist) {
+                        aeropuertoClic = a;
+                        minDist = dist;
+                    }
+                }
+                if (aeropuertoClic == null) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "No se hizo clic cerca de ningún aeropuerto.", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                if (origenSeleccionado[0] == null) {
+                    origenSeleccionado[0] = aeropuertoClic;
+                    Alert info2 = new Alert(Alert.AlertType.INFORMATION, "Origen seleccionado: " + aeropuertoClic.getCodigo() + ". Ahora haga clic en el aeropuerto DESTINO.", ButtonType.OK);
+                    info2.showAndWait();
+                } else if (destinoSeleccionado[0] == null) {
+                    destinoSeleccionado[0] = aeropuertoClic;
+                    if (origenSeleccionado[0].equals(destinoSeleccionado[0])) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "El aeropuerto de origen y destino no pueden ser el mismo.", ButtonType.OK);
+                        alert.showAndWait();
+                        origenSeleccionado[0] = null;
+                        destinoSeleccionado[0] = null;
+                        return;
+                    }
+                    // Buscar y eliminar el vuelo
+                    boolean eliminado = red.deleteVuelo(origenSeleccionado[0].getCodigo(), destinoSeleccionado[0].getCodigo());
+                    if (eliminado) {
+                        redibujarMapa(gc, mapa, canvasWidth, canvasHeight, red, coloresAeropuertos);
+                        Alert exito = new Alert(Alert.AlertType.INFORMATION, "Vuelo eliminado exitosamente.", ButtonType.OK);
+                        exito.showAndWait();
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "No existe un vuelo entre esos dos aeropuertos.", ButtonType.OK);
+                        alert.showAndWait();
+                    }
+                    canvas.setOnMouseClicked(null);
+                }
+            });
         });        
 
         // Reiniciar aeropuertos
@@ -425,6 +500,8 @@ public class Main extends Application {
                 alert.showAndWait();
             }
         });
+
+        // Estadistica 
     }
 
     // METODOS PARA CONVERTIR COORDENADAS
@@ -528,6 +605,52 @@ public class Main extends Application {
 
     }
     
+    private void mostrarEstadisticasAeropuertos(Red red){
+        List<Aeropuerto> aeropuertos = red.getVertices();
+        if(aeropuertos.isEmpty()){
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "No hay aeropuertos en la red.", ButtonType.OK);
+            alert.setTitle("Estadistica de Vuelos");
+            alert.setHeaderText("Estadistica de Vuelos");
+            alert.showAndWait();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        int maxVuelos = -1;
+        int minVuelos = Integer.MAX_VALUE;
+        Aeropuerto aeropuertoMax = null;
+        Aeropuerto aeropuertoMin = null;
+        for(Aeropuerto a : aeropuertos){
+            int numVuelos = a.getAdyacentes().size();
+            sb.append("Aeropuerto ").append(a.getCodigo())
+                .append(" (").append(a.getNombre()).append(") tiene ")
+                .append(numVuelos).append(numVuelos == 1 ? " vuelo" : " vuelos").append(System.lineSeparator());
+            if (numVuelos > maxVuelos) {
+                maxVuelos = numVuelos;
+                aeropuertoMax = a;
+            }
+            if (numVuelos < minVuelos) {
+                minVuelos = numVuelos;
+                aeropuertoMin = a;
+            }
+        }
+        sb.append(System.lineSeparator());
+        if (aeropuertoMax != null) {
+            sb.append("Aeropuerto con MÁS vuelos: ")
+                .append(aeropuertoMax.getCodigo()).append(" (").append(aeropuertoMax.getNombre()).append(") con ")
+                .append(maxVuelos).append(maxVuelos == 1 ? " vuelo" : " vuelos").append(System.lineSeparator());
+        }
+        if (aeropuertoMin != null) {
+            sb.append("Aeropuerto con MENOS vuelos: ")
+                .append(aeropuertoMin.getCodigo()).append(" (").append(aeropuertoMin.getNombre()).append(") con ")
+                .append(minVuelos).append(minVuelos == 1 ? " vuelo" : " vuelos");
+        }
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, sb.toString(), ButtonType.OK);
+        alert.setTitle("Estadísticas de Vuelos");
+        alert.setHeaderText("Vuelos por Aeropuerto");
+        alert.showAndWait();
+    }
+        
+
     
     public static void main(String[] args) {
         launch(args);
